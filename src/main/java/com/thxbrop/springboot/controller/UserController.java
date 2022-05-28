@@ -3,6 +3,8 @@ package com.thxbrop.springboot.controller;
 import com.thxbrop.springboot.Result;
 import com.thxbrop.springboot.ServerException;
 import com.thxbrop.springboot.annotation.TokenIgnored;
+import com.thxbrop.springboot.entity.Conversation;
+import com.thxbrop.springboot.entity.Token;
 import com.thxbrop.springboot.entity.User;
 import com.thxbrop.springboot.repository.UserRepository;
 import com.thxbrop.springboot.service.TokenService;
@@ -52,7 +54,7 @@ public class UserController {
 
     @TokenIgnored
     @GetMapping("/user/login")
-    public Result<String> login(
+    public Result<Token> login(
             @RequestParam String email,
             @RequestParam String password
     ) {
@@ -72,8 +74,9 @@ public class UserController {
                 .orElse(null);
         assert u != null;
         // Update the user token and old token will be marked invalidated
-        return new Result<>(tokenService.put(u.getId()).getToken());
+        return new Result<>(tokenService.put(u.getId()));
     }
+
 
     private boolean emailHasRegister(String email) {
         return ((List<User>) repository.findAll())

@@ -1,5 +1,6 @@
 package com.thxbrop.springboot;
 
+import com.mysql.cj.util.StringUtils;
 import com.thxbrop.springboot.entity.Token;
 import com.thxbrop.springboot.service.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +11,6 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Optional;
 
 @WebFilter("/*")
 @Component
@@ -29,25 +29,21 @@ public class TokenFilter implements Filter {
         String requestURI = request.getRequestURI();
         if (requestURI.contains("/user/login") || requestURI.contains("/user/register")) {
             filterChain.doFilter(servletRequest, servletResponse);
-        }
-        if (requestURI.contains("/user") || requestURI.contains("/con") || requestURI.contains("/member") || requestURI.contains("/invite") || requestURI.contains("/message")) {
-            Optional.ofNullable(request.getHeader("userId")).ifPresentOrElse(h -> {
-                int userId = Integer.parseInt(h);
-                String token = request.getHeader("token");
-                Token peek = tokenService.peek(userId);
-                if (peek != null && peek.getToken().equals(token)) {
-                    try {
-                        filterChain.doFilter(servletRequest, servletResponse);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }, () -> {
+        } else if (requestURI.contains("/user") || requestURI.contains("/con") || requestURI.contains("/member") || requestURI.contains("/invite") || requestURI.contains("/message")) {
+            String id = request.getHeader("userId");
+            String token = request.getHeader("token");
+            if (StringUtils.isNullOrEmpty(id) || StringUtils.isNullOrEmpty(token)) {
+                response.sendError(403, "Token Verification Failed");
+            }
+            int userId = Integer.parseInt(id);
+            Token peek = tokenService.peek(userId);
+            if (peek != null && peek.getToken().equals(token)) {
                 try {
-                    response.sendError(403, "Token Verification Failed");
-                } catch (IOException ignored) {
+                    filterChain.doFilter(servletRequest, servletResponse);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
-            });
+            }
         } else {
             filterChain.doFilter(servletRequest, servletResponse);
         }

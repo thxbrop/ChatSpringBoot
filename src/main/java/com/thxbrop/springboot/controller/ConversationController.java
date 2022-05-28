@@ -23,7 +23,6 @@ public class ConversationController {
     private final MessageRepository messageRepository;
     private final MemberRepository memberRepository;
     private final InviteRepository inviteRepository;
-
     private final UserRepository userRepository;
 
     @Autowired
@@ -151,5 +150,17 @@ public class ConversationController {
         invite.setToId(to);
         inviteRepository.save(invite);
         return new Result<>(invite);
+    }
+
+
+    @GetMapping("/con/query/contains")
+    public Result<List<Conversation>> getConversationsContains(@RequestParam int userId) {
+        Iterable<Member> members = memberRepository.findAll();
+        Iterable<Conversation> conversations = conversationRepository.findAll();
+        List<Conversation> list = StreamUtils.of(members)
+                .filter(member -> member.getUserId() == userId)
+                .map(member -> conversationRepository.findById(member.getConId()).orElse(null))
+                .collect(Collectors.toList());
+        return new Result<>(list);
     }
 }
